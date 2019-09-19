@@ -123,15 +123,15 @@ public class MessageParserTest {
      */
     @Test
     public void dataBOOLEAN() throws SecsException {
-        Data<?> data = MessageParser.parseData("<BOOLEAN True>");
+        Data<?> data = MessageParser.parseData("<BOOLEAN 1>");
         Assert.assertTrue(data instanceof BOOLEAN);
         BOOLEAN b = (BOOLEAN) data;
-        Assert.assertTrue(b.getValue());
+        Assert.assertTrue(b.getValue(0));
 
-        data = MessageParser.parseData("<BOOLEAN False>");
+        data = MessageParser.parseData("<BOOLEAN 0>");
         Assert.assertTrue(data instanceof BOOLEAN);
         b = (BOOLEAN) data;
-        Assert.assertFalse(b.getValue());
+        Assert.assertFalse(b.getValue(0));
     }
 
     /**
@@ -507,14 +507,14 @@ public class MessageParserTest {
      */
     @Test
     public void dataMessageBOOLEAN() throws SecsException {
-        byte[] data = new byte[] { 0x00, 0x00, 0x00, 0x0d, 0x00, 0x01, (byte) 0x82, 0x19, 0x00, 0x00, 0x11, 0x12, 0x13, 0x14, 0x11, 0x01, 0x01};
+        byte[] data = new byte[] { 0x00, 0x00, 0x00, 0x0d, 0x00, 0x01, (byte) 0x82, 0x19, 0x00, 0x00, 0x11, 0x12, 0x13, 0x14, 0x25, 0x01, 0x01};
         SecsMessage dataMessage = (SecsMessage) MessageParser.parseMessage(data, data.length, messageTypes);
         Data<?> text = dataMessage.getData();
         Assert.assertTrue(text instanceof BOOLEAN);
         BOOLEAN b = (BOOLEAN) text;
         Assert.assertEquals(1, b.length());
-        Assert.assertTrue(b.getValue());
-        Assert.assertEquals("<BOOLEAN True>", text.toSml());
+        Assert.assertTrue(b.getValue().get(0));
+        Assert.assertEquals("<BOOLEAN 1>", text.toSml());
     }
 
     /**
@@ -604,7 +604,7 @@ public class MessageParserTest {
         Assert.assertEquals(2, l.length());
         Assert.assertEquals("V1", l.getItem(0).getValue());
         Assert.assertEquals("V2", l.getItem(1).getValue());
-        Assert.assertEquals("<L [2]\n<A \"V1\">\n<A \"V2\">\n>", text.toSml());
+        Assert.assertEquals("<L[2]\n  <A \"V1\">\n  <A \"V2\">\n>", text.toSml());
     }
 
     /**
@@ -639,7 +639,7 @@ public class MessageParserTest {
         Assert.assertEquals(2, l2.length());
         Assert.assertEquals("V2", l2.getItem(0).getValue());
         Assert.assertEquals("V3", l2.getItem(1).getValue());
-        Assert.assertEquals("<L [2]\n<A \"V1\">\n<L [2]\n<A \"V2\">\n<A \"V3\">\n>\n>", text.toSml());
+        Assert.assertEquals("<L[2]\n  <A \"V1\">\n  <L[2]\n    <A \"V2\">\n    <A \"V3\">\n  >\n>", text.toSml());
     }
 
     /**
@@ -692,7 +692,7 @@ public class MessageParserTest {
         Assert.assertEquals(0x41, b4.get(0));
         Assert.assertEquals(0x42, b4.get(1));
         Assert.assertEquals(0x43, b4.get(2));
-        Assert.assertEquals("<L [2]\n<L [2]\n<B 0x11 0x12 0x13>\n<B 0x21 0x22 0x23>\n>\n<L [2]\n<B 0x31 0x32 0x33>\n<B 0x41 0x42 0x43>\n>\n>", text.toSml());
+        Assert.assertEquals("<L[2]\n  <L[2]\n    <B 0x11 0x12 0x13>\n    <B 0x21 0x22 0x23>\n  >\n  <L[2]\n    <B 0x31 0x32 0x33>\n    <B 0x41 0x42 0x43>\n  >\n>", text.toSml());
     }
 
     /**
@@ -723,7 +723,7 @@ public class MessageParserTest {
         Assert.assertEquals("SECS Equipment", s1f13.getModelName());
         Assert.assertEquals("1.0", s1f13.getSoftRev());
         Data<?> text = dataMessage.getData();
-        Assert.assertEquals("<L [2]\n<A \"SECS Equipment\">\n<A \"1.0\">\n>", text.toSml());
+        Assert.assertEquals("<L[2]\n  <A \"SECS Equipment\">\n  <A \"1.0\">\n>", text.toSml());
     }
 
 }

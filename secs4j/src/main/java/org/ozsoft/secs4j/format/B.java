@@ -166,7 +166,7 @@ public class B implements Data<List<Integer>> {
             // Write format byte.
             baos.write(FORMAT_CODE | noOfLengthBytes);
             for (int i = 0; i < noOfLengthBytes; i++) {
-                baos.write(lengthBytes.get(i));
+            	baos.write(lengthBytes.get(noOfLengthBytes - i - 1));
             }
             // Write bytes recursively.
             for (int b : bytes) {
@@ -181,15 +181,20 @@ public class B implements Data<List<Integer>> {
     @Override
     public String toSml() {
         StringBuilder sb = new StringBuilder();
+        toSml(sb, "");
+        return sb.toString();
+    }
+
+    @Override
+    public void toSml(StringBuilder sb, String indent) {
         int length = length();
-        sb.append("<B");
+        sb.append(indent).append("<B");
         if (length > 0) {
             for (int i = 0; i < length; i++) {
                 sb.append(String.format(" 0x%02x", bytes.get(i)));
             }
         }
         sb.append('>');
-        return sb.toString();
     }
 
     @Override

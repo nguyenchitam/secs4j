@@ -143,7 +143,7 @@ public abstract class SecsMessage extends Message {
         } catch (SecsParseException e) {
             throw new RuntimeException("Could not serialize message", e);
         }
-        return String.format("%s - %s {%s}", getType(), getDescripton(), sb);
+        return String.format("%s - %s { %s}", getType(), getDescripton(), sb);
     }
 
 }

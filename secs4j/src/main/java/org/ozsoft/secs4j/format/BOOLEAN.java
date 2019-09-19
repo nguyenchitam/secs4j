@@ -17,15 +17,21 @@
 
 package org.ozsoft.secs4j.format;
 
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.io.IOUtils;
+
 /**
  * SECS data item BOOLEAN (a single boolean).
  * 
  * @author Oscar Stigter
  */
-public class BOOLEAN implements Data<Boolean> {
+public class BOOLEAN implements Data<List<Boolean>> {
 
     /** SECS format code. */
-    public static final int FORMAT_CODE = 0x10;
+    public static final int FORMAT_CODE = 0x24;
 
     /** Fixed length of 1 byte. */
     public static final int LENGTH = 1;
@@ -36,14 +42,12 @@ public class BOOLEAN implements Data<Boolean> {
     /** Byte value for TRUE. */
     public static final byte TRUE = 0x01;
 
-    /** SML value for FALSE. */
-    public static final String FALSE_SML = "<BOOLEAN False>";
-
-    /** SML value for TRUE. */
-    public static final String TRUE_SML = "<BOOLEAN True>";
-
     /** The boolean value. */
-    private boolean value;
+    private List<Boolean> values = new ArrayList<Boolean>();
+
+    public BOOLEAN() {
+    	
+    }
 
     /**
      * Constructor based on a byte value.
@@ -52,7 +56,7 @@ public class BOOLEAN implements Data<Boolean> {
      *            The byte value.
      */
     public BOOLEAN(byte b) {
-        setValue(b == FALSE ? false : true);
+        values.add(b == FALSE ? false : true);
     }
 
     /**
@@ -62,7 +66,7 @@ public class BOOLEAN implements Data<Boolean> {
      *            The byte value.
      */
     public BOOLEAN(int b) {
-        setValue(b == FALSE ? false : true);
+    	values.add(b == FALSE ? false : true);
     }
 
     /**
@@ -72,32 +76,106 @@ public class BOOLEAN implements Data<Boolean> {
      *            The initial value.
      */
     public BOOLEAN(boolean value) {
-        setValue(value);
+    	values.add(value);
+    }
+
+    public void addValue(boolean value) {
+    	values.add(value);
+    }
+
+    public void addValue(byte b) {
+    	values.add(b == FALSE ? false : true);
+    }
+
+    public boolean getValue(int index) {
+        return values.get(index);
     }
 
     @Override
-    public Boolean getValue() {
-        return value;
+    public List<Boolean> getValue() {
+        return values;
     }
 
     @Override
-    public void setValue(Boolean value) {
-        this.value = value;
+    public void setValue(List<Boolean> values) {
+        this.values = values;
     }
 
     @Override
     public int length() {
-        return LENGTH;
+    	return values.size();
     }
 
     @Override
     public byte[] toByteArray() {
-        return new byte[] { FORMAT_CODE, LENGTH, (value) ? TRUE : FALSE };
+    	// Determine length.
+        int length = length();
+        int noOfLengthBytes = 1;
+        B lengthBytes = new B();
+        lengthBytes.add(length & 0xff);
+        if (length > 0xff) {
+            noOfLengthBytes++;
+            lengthBytes.add((length >> 8) & 0xff);
+        }
+        if (length > 0xffff) {
+            noOfLengthBytes++;
+            lengthBytes.add((length >> 16) & 0xff);
+        }
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            // Write format byte.
+            baos.write(FORMAT_CODE | noOfLengthBytes);
+            for (int i = 0; i < noOfLengthBytes; i++) {
+            	baos.write(lengthBytes.get(noOfLengthBytes - i - 1));
+            }
+            // Write bytes recursively.
+            for (boolean value : values) {
+                baos.write(value ? TRUE : FALSE);
+            }
+            return baos.toByteArray();
+        } finally {
+            IOUtils.closeQuietly(baos);
+        }
     }
 
     @Override
     public String toSml() {
-        return value ? TRUE_SML : FALSE_SML;
+        StringBuilder sb = new StringBuilder();
+        toSml(sb, "");
+        return sb.toString();
+    }
+
+    @Override
+    public void toSml(StringBuilder sb, String indent) {
+    	int length = length();
+        sb.append(indent).append("<BOOLEAN");
+        if (length > 0) {
+            for (boolean value : values) {
+                sb.append(' ');
+                sb.append(value ? "1" : "0");
+            }
+        }
+        sb.append('>');
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof BOOLEAN) {
+        	BOOLEAN b = (BOOLEAN) obj;
+            int length = b.length();
+            if (length == length()) {
+                for (int i = 0; i < length; i++) {
+                    if (b.getValue(i) != values.get(i)) {
+                        return false;
+                    }
+                }
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 
     @Override

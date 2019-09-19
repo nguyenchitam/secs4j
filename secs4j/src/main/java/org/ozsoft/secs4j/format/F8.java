@@ -146,7 +146,7 @@ public class F8 implements Data<List<Double>> {
 
             // Write length bytes.
             for (int i = 0; i < noOfLengthBytes; i++) {
-                baos.write(lengthBytes.get(i));
+            	baos.write(lengthBytes.get(noOfLengthBytes - i - 1));
             }
 
             // Write values.
@@ -168,9 +168,15 @@ public class F8 implements Data<List<Double>> {
 
     @Override
     public String toSml() {
-        int length = length();
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("<%s", NAME));
+        toSml(sb, "");
+        return sb.toString();
+    }
+
+    @Override
+    public void toSml(StringBuilder sb, String indent) {
+        int length = length();
+        sb.append(indent).append("<").append(NAME);
         if (length > 0) {
             for (double value : values) {
                 sb.append(' ');
@@ -178,7 +184,6 @@ public class F8 implements Data<List<Double>> {
             }
         }
         sb.append('>');
-        return sb.toString();
     }
 
     @Override

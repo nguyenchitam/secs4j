@@ -46,6 +46,7 @@ import org.ozsoft.secs4j.ConnectMode;
 import org.ozsoft.secs4j.ConnectionState;
 import org.ozsoft.secs4j.ControlState;
 import org.ozsoft.secs4j.Message;
+import org.ozsoft.secs4j.MessageParser;
 import org.ozsoft.secs4j.SecsConstants;
 import org.ozsoft.secs4j.SecsEquipment;
 import org.ozsoft.secs4j.SecsEquipmentListener;
@@ -396,7 +397,7 @@ public class TestTool implements SecsEquipmentListener {
         panel.setBorder(new TitledBorder("Send Message"));
         
         sendText = new JTextArea();
-        sendText.setEnabled(false);
+//        sendText.setEnabled(false);
         sendText.setFont(FONT);
         sendText.setLineWrap(false);
         JScrollPane scrollPane = new JScrollPane(sendText);
@@ -412,7 +413,7 @@ public class TestTool implements SecsEquipmentListener {
         panel.add(scrollPane, gbc);
         
         sendButton = new JButton("Send");
-        sendButton.setEnabled(false);
+//        sendButton.setEnabled(false);
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
@@ -423,6 +424,17 @@ public class TestTool implements SecsEquipmentListener {
         gbc.weighty = 0.0;
         gbc.insets = new Insets(5, 0, 5, 5);
         panel.add(sendButton, gbc);
+        sendButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					equipment.sendMessage(MessageParser.parseSML(sendText.getText()), false);
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+        });
         
         gbc.gridx = 0;
         gbc.gridy = 3;

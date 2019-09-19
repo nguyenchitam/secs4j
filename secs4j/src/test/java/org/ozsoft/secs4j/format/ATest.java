@@ -27,7 +27,7 @@ public class ATest {
     public void test() {
         A a = new A();
         Assert.assertEquals(0, a.length());
-        Assert.assertEquals("<A>", a.toSml());
+        Assert.assertEquals("<A \"\">", a.toSml());
         TestUtils.assertEquals(new byte[] {0x41, 0x00}, a.toByteArray());
 
         a = new A("Test");

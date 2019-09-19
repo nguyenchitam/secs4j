@@ -68,4 +68,14 @@ public interface Data<T> {
      */
     String toSml();
 
+    /**
+     * Returns the SML text representing this data item.
+     * 
+     * @param sb Buffer
+     * @param indent Indentation
+     * 
+     * @return The SML text.
+     */
+    void toSml(StringBuilder sb, String indent);
+
 }

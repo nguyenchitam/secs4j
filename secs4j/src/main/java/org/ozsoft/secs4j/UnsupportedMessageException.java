@@ -17,6 +17,8 @@
 
 package org.ozsoft.secs4j;
 
+import org.ozsoft.secs4j.message.SxFy;
+
 /**
  * Indicates an unsupported SECS message.
  * 
@@ -26,9 +28,7 @@ public class UnsupportedMessageException extends SecsException {
 
     private static final long serialVersionUID = -1434846673624462650L;
     
-    private final int stream;
-    
-    private final int function;
+    private final SxFy msg;
     
     private final long transactionId;
 
@@ -42,10 +42,9 @@ public class UnsupportedMessageException extends SecsException {
      * @param transactionId
      *            The message's transaction ID.
      */
-    public UnsupportedMessageException(int stream, int function, long transactionId) {
-        super(String.format("Unsupported SECS message: S%dF%d", stream, function));
-        this.stream = stream;
-        this.function = function;
+    public UnsupportedMessageException(long transactionId, SxFy msg) {
+		super(String.format("Unsupported SECS message:\n%s", msg.toString()));
+        this.msg = msg;
         this.transactionId = transactionId;
     }
     
@@ -55,7 +54,7 @@ public class UnsupportedMessageException extends SecsException {
      * @return The stream.
      */
     public int getStream() {
-        return stream;
+        return msg.getStream();
     }
     
     /**
@@ -64,9 +63,26 @@ public class UnsupportedMessageException extends SecsException {
      * @return The function.
      */
     public int getFunction() {
-        return function;
+        return msg.getFunction();
     }
 
+    /**
+     * Returns the reply bit of the message.
+     * 
+     * @return The reply bit.
+     */
+    public boolean withReply() {
+    	return msg.withReply();
+    }
+    
+    /**
+     * Returns the received message
+     * @return The received message
+     */
+	public SxFy getMsg() {
+		return msg;
+	}
+    
     /**
      * Returns the transaction ID of the message.
      * 

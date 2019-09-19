@@ -34,6 +34,7 @@ import org.ozsoft.secs4j.format.U1;
 import org.ozsoft.secs4j.format.U2;
 import org.ozsoft.secs4j.format.U4;
 import org.ozsoft.secs4j.format.U8;
+import org.ozsoft.secs4j.message.SxFy;
 import org.ozsoft.secs4j.util.ConversionUtils;
 
 /**
@@ -170,7 +171,10 @@ public class MessageParser {
                     throw new SecsParseException("Could not instantiate message type: " + messageType, e);
                 }
             } else {
-                throw new UnsupportedMessageException(stream, function, transactionId);
+            	SxFy msg = new SxFy(stream, function);
+            	msg.setReplyBit((headerByte2 & 0x80) != 0);
+            	msg.parseData(text);
+                throw new UnsupportedMessageException(transactionId, msg);
             }
         } else {
             return new ControlMessage(sessionId, headerByte2, headerByte3, sType, transactionId);
@@ -193,13 +197,13 @@ public class MessageParser {
         }
         int length = data[offset + 1];
         if (noOfLengthBytes > 1) {
-            length |= (data[offset + 2] << 8);
+            length = (length << 8) | data[offset + 2];
         }
         if (noOfLengthBytes > 2) {
-            length |= (data[offset + 3] << 16);
+            length = (length << 8) | data[offset + 3];
         }
         if (noOfLengthBytes > 3) {
-            length |= (data[offset + 4] << 24);
+            length = (length << 8) | data[offset + 4];
         }
         if (data.length < offset + 2 + length) {
             throw new SecsParseException("Incomplete message data");
@@ -269,16 +273,17 @@ public class MessageParser {
     private static B parseB(byte[] data, int offset, int length) {
         B b = new B();
         for (int i = 0; i < length; i++) {
-            b.add(data[offset + i]);
+            b.add(data[offset + i] & 0xff);
         }
         return b;
     }
 
     private static BOOLEAN parseBoolean(byte[] data, int offset, int length) throws SecsParseException {
-        if (length != BOOLEAN.LENGTH) {
-            throw new SecsParseException("Invalid BOOLEAN length: " + length);
+        BOOLEAN bool = new BOOLEAN();
+        for (int i = 0; i < length; i++) {
+            bool.addValue(data[offset + i]);
         }
-        return new BOOLEAN(data[offset]);
+        return bool;
     }
 
     private static A parseA(byte[] data, int offset, int length) {
@@ -398,6 +403,62 @@ public class MessageParser {
         return f8;
     }
     
+	public static SxFy parseSML(String text) throws SecsParseException {
+		if (text.startsWith("S")) {
+			int i = text.indexOf("F");
+			if (i > 1) {
+				int stream;
+				try {
+				    stream = Integer.parseInt(text.substring(1, i));
+				} catch (Exception e) {
+					throw new SecsParseException("Cannot parse Stream: " + text.substring(1, i));
+				}
+				int iEnd = text.length();
+				int j = text.indexOf(" ", i);
+				if (i < j && j < iEnd) {
+					iEnd = j;
+				}
+				j = text.indexOf("\n", i);
+				if (i < j && j < iEnd) {
+					iEnd = j;
+				}
+				j = text.indexOf(".", i);
+				if (i < j && j < iEnd) {
+					iEnd = j;
+				}
+				if (iEnd > i + 1) {
+					int function;
+					try {
+						function = Integer.parseInt(text.substring(i + 1, iEnd));
+					} catch (Exception e) {
+						throw new SecsParseException("Cannot parse Function: " + text.substring(i + 1, iEnd));
+					}
+					text = text.substring(iEnd).trim();
+					SxFy msg = new SxFy(stream, function);
+					if (text.startsWith("W")) {
+						msg.setReplyBit(true);
+						text = text.substring(1);
+					}
+					if (text.endsWith(".")) {
+						msg.setReplyBit(true);
+						text = text.substring(0, text.length() - 1);
+					}
+					text = text.trim();
+					if (text.length() > 0) {
+						msg.parseData(parseData(text));
+					}
+					return msg;
+				} else {
+					throw new SecsParseException("Cannot get F");
+				}
+			} else {
+				throw new SecsParseException("Expected F");
+			}
+		} else {
+			throw new SecsParseException("Expected S");
+		}
+	}
+
     public static Data<?> parseData(String text) throws SecsParseException {
         if (text == null) {
             throw new SecsParseException("Empty data item");
@@ -461,31 +522,39 @@ public class MessageParser {
     
     private static Data<?> parseData(String type, String value) throws SecsParseException {
         Data<?> data = null;
-        
+        // ignore the length
+        {
+            int iStart = type.indexOf("[");
+            if (iStart > 0) {
+                type = type.substring(0, iStart).trim();
+            }
+        }
         if (type.equals("L")) {
             data = parseL(value);
         } else if (type.equals("B")) {
             B b = new B();
             try {
-                for (String s : value.split("\\s")) {
-                	if (s.startsWith("0x")) {
-                        b.add(Byte.parseByte(s.substring(2)));
-                	} else {
-                        b.add(Byte.parseByte(s));
-                	}
+                if (!value.isEmpty()) {
+                    for (String s : value.split("\\s")) {
+                        if (s.startsWith("0x")) {
+                            b.add(Integer.parseInt(s.substring(2), 16));
+                        } else {
+                            b.add(Integer.parseInt(s));
+                        }
+                    }
                 }
             } catch (NumberFormatException e) {
                 throw new SecsParseException("Invalid B value: " + value);
             }
             data = b;
         } else if (type.equals("BOOLEAN")) {
-            if (value.equals("True")) {
-                data = new BOOLEAN(true);
-            } else if (value.equals("False")) {
-                data = new BOOLEAN(false);
-            } else {
-                throw new SecsParseException("Invalid BOOLEAN value: " + value);
+            BOOLEAN bool = new BOOLEAN();
+            if (!value.isEmpty()) {
+                for (String s : value.split("\\s")) {
+                    bool.addValue(s.equalsIgnoreCase("false") || s.equals("0") ? false : true);
+                }
             }
+            data = bool;
         } else if (type.equals("A")) {
         	if (!value.isEmpty()) {
             	if (value.charAt(0) != '\"' || value.charAt(value.length() - 1) != '\"') {

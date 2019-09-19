@@ -367,13 +367,15 @@ public class SecsEquipment {
         sendMessage(primaryMessage, true);
     }
         
-    private void sendMessage(Message message, boolean checkCommunicationState) throws SecsException {
+    public void sendMessage(Message message, boolean checkCommunicationState) throws SecsException {
         if (checkCommunicationState && communicationState != CommunicationState.COMMUNICATING) {
             throw new SecsException("Communication State not COMMUNICATING");
         }
         
         message.setEquipment(this);
-        message.setSessionId(deviceId);
+        if (message instanceof SecsMessage) {
+            message.setSessionId(deviceId);
+        }
         
         if (message.getTransactionId() == 0L) {
             message.setTransactionId(getNextTransactionId());
@@ -515,10 +517,14 @@ public class SecsEquipment {
                     } catch (UnsupportedMessageException e) {
                         // Unsupported message type -- ABORT.
                         LOG.warn(e.getMessage());
-                        SecsMessage sxf0 = new SxF0(e.getStream());
-                        sxf0.setTransactionId(e.getTransactionId());
-                        sendMessage(sxf0, false);
-                        
+                        for (SecsEquipmentListener listener : listeners) {
+                            listener.messageReceived(e.getMsg());
+                        }
+                        if (e.withReply()) {
+                            SecsMessage sxf0 = new SxF0(e.getStream());
+                            sxf0.setTransactionId(e.getTransactionId());
+                            sendMessage(sxf0, false);
+                        }
                     } catch (SecsParseException e) {
                         // Protocol fault by remote equipment.
                         LOG.warn("Received invalid SECS message: " + e.getMessage());
@@ -639,6 +645,9 @@ public class SecsEquipment {
 
                 default:
                     LOG.warn(String.format("Unsupported control message (SType = %s) -- ignored", sType));
+            }
+            for (SecsEquipmentListener listener : listeners) {
+                listener.messageReceived(message);
             }
         } else {
             // Data message (standard GEM or custom).

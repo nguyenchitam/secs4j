@@ -102,7 +102,7 @@ public class L implements Data<List<Data<?>>> {
             // Write format byte.
             baos.write(FORMAT_CODE | noOfLengthBytes);
             for (int i = 0; i < noOfLengthBytes; i++) {
-                baos.write(lengthBytes.get(i));
+            	baos.write(lengthBytes.get(noOfLengthBytes - i - 1));
             }
         
             // Write items recursively.
@@ -122,18 +122,23 @@ public class L implements Data<List<Data<?>>> {
 
     @Override
     public String toSml() {
+        StringBuilder sb = new StringBuilder();
+        toSml(sb, "");
+        return sb.toString();
+    }
+
+    @Override
+    public void toSml(StringBuilder sb, String indent) {
     	if (length() == 0) {
-    		return "<L>";
+    		sb.append(indent).append("<L[0] >");
     	} else {
-	        StringBuilder sb = new StringBuilder();
 	        int length = items.size();
-	        sb.append(String.format("<L [%d]", length));
+	        sb.append(indent).append("<L[").append(length).append("]");
 	        for (int i = 0; i < length; i++) {
 	            sb.append('\n');
-	            sb.append(items.get(i).toSml());
+	            items.get(i).toSml(sb, indent + "  ");
 	        }
-	        sb.append("\n>");
-	        return sb.toString();
+	        sb.append('\n').append(indent).append(">");
     	}
     }
     

@@ -127,7 +127,7 @@ public class ControlMessage extends Message {
             // Internal error (should never happen).
             throw new RuntimeException(e);
         }
-        return String.format("%s {%s}", sType, sb);
+        return String.format("%s { %s}", sType, sb);
     }
 
 }

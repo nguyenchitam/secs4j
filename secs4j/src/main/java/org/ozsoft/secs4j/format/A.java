@@ -89,7 +89,7 @@ public class A implements Data<String> {
             
             // Write length bytes.
             for (int i = 0; i < noOfLengthBytes; i++) {
-                baos.write(lengthBytes.get(i));
+                baos.write(lengthBytes.get(noOfLengthBytes - i - 1));
             }
             
             // Write character bytes.
@@ -106,11 +106,12 @@ public class A implements Data<String> {
 
     @Override
     public String toSml() {
-    	if (length() == 0) {
-    		return "<A>";
-    	} else {
-    		return String.format("<A \"%s\">", value);
-    	}
+        return String.format("<A \"%s\">", value);
+    }
+
+    @Override
+    public void toSml(StringBuilder sb, String indent) {
+   	    sb.append(indent).append("<A \"").append(value).append("\">");
     }
     
     @Override
